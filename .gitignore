@@ -1,0 +1,29 @@
+# Unreal generated directories
+/Binaries/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+/**/Binaries/
+/**/DerivedDataCache/
+/**/Intermediate/
+/**/Saved/
+
+# IDE generated files
+/.vs/
+/.idea/
+*.sln
+*.slnx
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.suo
+
+# User and platform noise
+/Content/Developers/
+.DS_Store
+Thumbs.db
+
+# Third-party commercial assets must stay outside the public repository.
+# New external content should be isolated here when its package paths allow it.
+/Content/ThirdParty/
