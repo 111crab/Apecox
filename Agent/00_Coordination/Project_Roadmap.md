@@ -38,7 +38,7 @@
 
 验收：单人、Listen Server + Client、Dedicated Server + Client 下所有权一致；死亡换 Pawn 后无残留输入、Ability 或 Cue。
 
-当前状态：进行中。Phase 1A 的 Gameplay Framework、PlayerState ASC 所有权和 Pawn Avatar 对称 Init/Uninit 已通过完整构建、单人 PIE 与两人 Listen Server 验证；下一步进入 Phase 1B 设计讨论。
+当前状态：进行中。Phase 1A 已形成提交 `86ed380`；Phase 1B 的 AbilitySet、项目 GA 基类、Native GameplayTag 和 Ability 输入闭环已通过完整构建、单人及两人 Listen Server 验证。下一局部阶段候选为 Phase 1C：死亡、复活、换 Pawn 与 Dedicated Server 生命周期收口。
 
 ## Phase 2 - 第一把步枪腰射纵向切片
 

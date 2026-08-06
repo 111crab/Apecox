@@ -35,6 +35,7 @@
 
 - 不在计划批准前擅自写大范围代码。
 - 不覆盖用户或其他代理已有改动。
+- UE 资产实例按其父类/资产类型使用前缀；`UDataAsset` 与 `UPrimaryDataAsset` 的实例统一使用 `DA_`，不能因为业务名称是 AbilitySet 就改用 `AS_`。
 - 新增业务 C++ 文件时，模块内必须使用 `Public` 与 `Private` 分层：`.h` 放入 `Public`，`.cpp` 放入 `Private`；两侧按相同领域建立对称目录，例如 `Public/AbilitySystem/...` 对应 `Private/AbilitySystem/...`。
 - 不为只有 `.cpp` 或只有 `.h` 的领域强行创建空目录，但一旦两侧都存在该领域文件，目录层级和命名必须一致。
 - 关键代码写学习型注释：既说明做什么，也说明为什么归属在这里；长篇设计理由进入 Markdown。

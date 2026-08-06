@@ -8,7 +8,8 @@
 - 项目文件：`Apecox.uproject`
 - Unreal Engine：5.8，安装路径 `E:/UE_5.8`
 - 主运行时模块：`Apecox`
-- Phase 1A 已建立最小 Gameplay Framework、PlayerState ASC 所有权、Pawn Avatar Init/Uninit 和 `Health/MaxHealth` Vital Attribute；代码审查及完整 `ApecoxEditor` 构建已通过，等待 PIE 验证。
+- Phase 1A 已建立最小 Gameplay Framework、PlayerState ASC 所有权、Pawn Avatar Init/Uninit 和 `Health/MaxHealth` Vital Attribute；完整构建、单人 PIE 与两人 Listen Server 均已通过，形成提交 `86ed380`，尚未 push。
+- Phase 1B 已完成：AbilitySet、项目 GA 基类、Native GameplayTag 与中性物理输入边沿闭环已通过完整构建、单人及两人 Listen Server 验证；下一步讨论 Phase 1C 生命周期收口。
 - `Apecox.Build.cs` 当前依赖：`Core`、`CoreUObject`、`Engine`、`InputCore`、`EnhancedInput`、`GameplayAbilities`、`GameplayTags`、`GameplayTasks`。
 - Git 已初始化，当前分支为 `main`，远端 `origin` 指向 `https://github.com/111crab/Apecox.git`；Phase 0 基线提交 `e115f8f` 已推送。
 - 项目自建 `.uasset/.umap/.ubulk/.uexp` 使用 Git LFS；第三方商业资产默认不提交。

@@ -6,63 +6,63 @@
 
 Phase 1 - 玩家生命周期与 GAS 基线。
 
-Phase 0 已完成并形成远端基线提交：`e115f8f chore: establish Apecox project baseline`。
+Phase 0 已完成并推送：`e115f8f chore: establish Apecox project baseline`。
+
+Phase 1A 已完成并形成仅本地提交：
+
+```text
+86ed380 gas: establish player ASC lifecycle baseline
+```
+
+该提交已通过完整构建、单人 PIE 和两人 Listen Server，尚未 push。
 
 ## 当前局部任务
 
-Phase 1A：最小 Gameplay Framework、PlayerState ASC 所有权和 Pawn Avatar 对称 Init/Uninit。**已完成。**
+Phase 1B：AbilitySet、项目 GA 基类、Native GameplayTag 与按下/保持/松开输入闭环。**已完成。**
 
-本批目标是先证明下列关系在单人和多人环境中稳定：
+## 已批准范围
 
-```text
-OwnerActor  = AApecoxPlayerState
-AvatarActor = 当前 AApecoxPlayerCharacter
-Replication = Mixed
-```
-
-## 已批准设计
-
-- 创建 `AApecoxGameMode`、`AApecoxGameState`、`AApecoxPlayerController`、`AApecoxPlayerState`、`AApecoxPlayerCharacter`。
-- 创建 `UApecoxAbilitySystemComponent` 和只包含 `Health/MaxHealth` 的 `UApecoxVitalAttributeSet`。
-- `AApecoxGameMode` 继承 `AGameModeBase`，当前不实现完整比赛状态机。
-- PlayerState 真正拥有 ASC 和 AttributeSet；Character 只作为 Avatar 和访问桥梁，禁止创建第二个 ASC。
-- 新 C++ 文件严格使用对称 `Source/Apecox/Public/<领域>` 与 `Private/<领域>`。
-- 公开 API、成员变量和路径以 `Current_Code_Design.md` 为准。
+- 新建 `UApecoxGameplayAbility` 抽象基类。
+- 建立 ActivationPolicy 与 ActivationGroup 两个封闭枚举。
+- 新建完整 `UApecoxAbilitySet` 可撤销授予包。
+- 新建 `UApecoxInputConfig` 和 `UApecoxInputComponent`。
+- 扩展 ASC 的 Pressed/Held/Released 缓存、Generic Replicated Event、OnAvatarSet 和并发组。
+- PlayerController 在 `PostProcessInput` 统一调用 ASC 输入处理。
+- Character 配置并管理 Pawn 生命周期的 InputConfig、IMC 和 AbilitySet。
+- Native Tag 仅加入：
+  - `InputTag.Ability.Tactical`
+  - `State.Input.AbilityBlocked`
+- Tactical 默认绑定键盘 Q，不设计手柄输入。
 
 ## 当前执行顺序
 
-1. Codex 更新当前设计与阶段记录。已完成。
-2. Codex 生成适用于全新 ClaudeCode 窗口的冷启动实施 Prompt。已完成。
-3. ClaudeCode 完成首轮代码和中文报告。已完成。
-4. Codex 完成首轮审查。结论：暂不通过，需要修复两个 ASC 生命周期问题和若干基础问题。
-5. ClaudeCode 完成首轮修复；Codex 复审确认两个 P1 已解决，但发现一个 MaxHealth Base 回写的剩余 P2。
-6. ClaudeCode 完成二次精简修复；Codex 最终静态复审和独立 `-NoLink` 构建均已通过。
-7. 用户关闭 Unreal Editor 后，Codex 完成一次无文件锁的完整 DLL 链接构建。已完成，`Result: Succeeded`。
-8. 用户确认审查结果后自行刷新 Rider 项目文件。
-9. Codex 覆盖 `Current_UE_Manual_Steps.md`，用户完成 UE 配置和单人/Listen Server 验证。已完成，全部通过。
-10. Phase 1A 已形成代码审查、完整构建、单人 PIE 和两人 Listen Server 的完整闭环。
-11. 下一步讨论 Phase 1B 的 AbilitySet、InputTag 与最小 Ability；未确认设计前不实施。
+1. Phase 1A 本地 commit，不 push。已完成。
+2. Codex 更新 Phase 1B 代码设计和子代理 Prompt。已完成。
+3. 用户运行 ClaudeCode Prompt。已完成。
+4. Codex 审查源码、公开命名、GAS 输入事件、并发计数和生命周期。已完成三轮审查并通过。
+5. 修复完成并编译通过后，Codex 覆盖 UE 人工操作清单。已完成。
+6. 用户创建最小 Input/GA/AbilitySet/BP 资产。已完成。
+7. 单人运行验证发现两个问题：瞬时 `Pressed` Trigger 导致按下后立刻产生 `Completed`；ASC 默认的 PlayerState Avatar 被误判为异常。已定位并修复。
+8. 子代理完成运行时修复，Codex 复审通过。
+9. IA/IMC Trigger 已改为中性物理边沿配置；AbilitySet 已按 DataAsset 规则命名为 `DA_Phase1B_AbilitySet`。
+10. 完整构建、单人和两人 Listen Server 的按下、保持、松开验证全部通过。
+11. 用户批准 Phase 1B 提交并 push，当前执行阶段收口。
 
-## 本批不做
+## 成功标准
 
-- AbilitySet、InputTag、输入绑定和 GameplayTag。
-- Health 死亡语义、Death Ability、Respawn、Shield、EvolutionProgress。
-- 相机、人物 Mesh、动画、武器、UI 或其他 UE 资产。
-- Dedicated Server 最终验收将在 Phase 1 完整闭环时进行。
-
-## Phase 1A 成功标准
-
-- `ApecoxEditor Win64 Development` 编译通过。
-- 单人 PIE 中 PlayerState 是 ASC Owner，当前 Character 是 Avatar。
-- 2 人 Listen Server 中主机与客户端都能建立正确的 Owner/Avatar，不存在 Character 上的第二个 ASC。
-- 解除占有、销毁或更换 Pawn 时，只清理旧 Avatar，不破坏已绑定的新 Avatar。
-- `Health/MaxHealth` 可以复制，但本批不要求伤害、死亡或 UI 表现。
-- 实施不包含未批准 GameplayTag、资产或额外系统。
+- Q 只激活带 `InputTag.Ability.Tactical` 的 AbilitySpec。
+- OnInputTriggered 每次按下只激活一次，按住不会重复激活。
+- GA 在 WaitInputRelease 中保持活跃，松键后本地预测端和服务器都结束。
+- 两名玩家的输入、SpecHandle 和 PredictionKey 不串联。
+- Avatar 解绑时清除 Held 输入并撤销 Pawn AbilitySet，不破坏 PlayerState Owner。
+- 完整构建通过；代码范围内没有临时 GameplayTag、正式技能或武器逻辑。
 
 ## 当前待确认
 
-无新的类名或 GameplayTag。修复不改变已批准的七类职责，只纠正 ASC 解绑、旧 Avatar 接管、网络更新频率和 Attribute 不变量。
+无当前阻塞项。
+
+后续技能配置设计仍需解决：`ActivationPolicy` 当前位于 GA CDO，如何让同一个 GA 类按不同角色/授予配置采用瞬发、按住或松发流程。该规则不得放回 IA。
 
 ## 当前下一步
 
-Phase 1A 已通过。进入 Phase 1B 设计讨论：明确 `AbilitySet` 的资产职责、输入 Tag 命名与路由边界，以及最小 Ability 的激活、取消和结束验证口径。
+今天结束工作。下一次先讨论 Phase 1C：最小死亡/复活/换 Pawn 与 Dedicated Server 生命周期闭环；方案经用户批准后再实施。

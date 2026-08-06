@@ -55,3 +55,12 @@
 - commit 以可说明的功能闭环或小阶段为单位，不为零散改动频繁提交。
 - push 由用户负责最终收口；Codex 仅在形成足够稳定的里程碑时建议，并在获得确认后执行。
 - Git 服务于恢复和协作，不应拖慢架构讨论、实现和验证。
+
+## 2026-08-06 - Phase 1B AbilitySet 与输入生命周期
+
+- `UApecoxGameplayAbility` 作为项目抽象 GA 基类；激活策略采用 `OnInputTriggered / WhileInputActive / OnAvatarSet`。
+- Ability 并发采用 `Independent / ExclusiveReplaceable / ExclusiveBlocking` 封闭枚举；本阶段不引入 Tag Relationship Mapping。
+- `UApecoxAbilitySet` 是 Authority 授予、可由 Handles 撤销的 `UPrimaryDataAsset`，不是技能完整定义。
+- 输入链采用 IA -> InputConfig -> InputTag -> AbilitySpec；ASC 在 PlayerController `PostProcessInput` 阶段统一处理 Pressed/Held/Released。
+- 首批 Native Tag 仅为 `InputTag.Ability.Tactical` 与 `State.Input.AbilityBlocked`；Tactical 绑定键盘 Q。
+- Pawn AbilitySet 由 Character 保存授予 Handles 并随 Avatar 生命周期撤销；装备和英雄玩家级授予以后由各自所有者管理。
