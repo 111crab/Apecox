@@ -38,3 +38,20 @@
 - GitHub 远端使用 `https://github.com/111crab/Apecox`；项目自建 `.uasset/.umap/.ubulk/.uexp` 使用 Git LFS。
 - 初期验证地图新建为非 World Partition 的轻量 `L_Apecox_DevGym`。Lyra `L_ShooterGym` 仅作为布局参考；不迁移其 GameFeature/Experience 依赖，也不迁移收益有限的旧 Apex 模板地图。
 - Phase 0 已完成 `GameplayAbilities` 显式启用、Hardware Ray Tracing/Substrate 关闭、轻量 DevGym、单人/2 人 Listen Server 和 `ApecoxEditor Win64 Development` 构建验证；旧地图 Redirector 已清理。
+
+## 2026-08-06 - Phase 1A 玩家与 ASC 生命周期设计
+
+- Phase 0 已以提交 `e115f8f chore: establish Apecox project baseline` 推送到 `origin/main`，开始 Phase 1。
+- Phase 1 拆分为三个可独立编译验证的小闭环：1A Gameplay Framework/ASC 所有权，1B AbilitySet/InputTag/最小 Ability，1C Health/Death/Respawn。
+- Phase 1A 批准创建 `AApecoxGameMode`、`AApecoxGameState`、`AApecoxPlayerController`、`AApecoxPlayerState`、`AApecoxPlayerCharacter`、`UApecoxAbilitySystemComponent`、`UApecoxVitalAttributeSet`。
+- `AApecoxGameMode` 继承 `AGameModeBase`，当前不引入完整比赛状态机。
+- 玩家 ASC 由 `AApecoxPlayerState` 真正拥有并使用 Mixed 复制；`AApecoxPlayerCharacter` 只作为当前 Avatar 和 ASC 访问桥梁。
+- `UApecoxVitalAttributeSet` 本批只建立 `Health/MaxHealth`，不提前加入 Shield、EvolutionProgress 或死亡行为。
+- 新 ClaudeCode 窗口必须先阅读 Apecox 当前协作规范和设计文件；子代理继续只负责按批准 Prompt 实施并提交中文报告，Codex 负责后续审查。
+
+## 2026-08-06 - Git 采用主动暂存、阶段提交、低频推送
+
+- 已验证的小目标完成后，Codex 可以主动暂存该目标的明确改动。
+- commit 以可说明的功能闭环或小阶段为单位，不为零散改动频繁提交。
+- push 由用户负责最终收口；Codex 仅在形成足够稳定的里程碑时建议，并在获得确认后执行。
+- Git 服务于恢复和协作，不应拖慢架构讨论、实现和验证。

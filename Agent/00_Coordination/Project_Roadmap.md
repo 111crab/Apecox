@@ -1,6 +1,6 @@
 # Apecox 顶层实施路线图
 
-更新日期：2026-08-05  
+更新日期：2026-08-06
 维护规则：这里只记录顶层实施阶段与阶段验收，不记录每日任务；当前局部工作只看 `Current_Phase.md`。
 
 ## 实施原则
@@ -22,7 +22,7 @@
 - 初始化 Git、忽略规则与 Git LFS；第三方资产不进入公开仓库。
 - 确认空项目编译、PIE、Listen Server 和 Dedicated Server 启动基线。
 
-状态：技术验证已完成。渲染、插件、DevGym、单人/Listen Server、C++ 构建、Git/LFS 与远端均通过，正在形成首次基线提交。
+状态：已完成。提交 `e115f8f chore: establish Apecox project baseline` 已推送到 `origin/main`。
 
 ## Phase 1 - 玩家生命周期与 GAS 基线
 
@@ -37,6 +37,8 @@
 - 一个无美术依赖的最小 Ability 激活/取消/结束闭环。
 
 验收：单人、Listen Server + Client、Dedicated Server + Client 下所有权一致；死亡换 Pawn 后无残留输入、Ability 或 Cue。
+
+当前状态：进行中。Phase 1A 的 Gameplay Framework、PlayerState ASC 所有权和 Pawn Avatar 对称 Init/Uninit 已通过完整构建、单人 PIE 与两人 Listen Server 验证；下一步进入 Phase 1B 设计讨论。
 
 ## Phase 2 - 第一把步枪腰射纵向切片
 

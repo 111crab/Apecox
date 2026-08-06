@@ -1,85 +1,123 @@
-# 当前 UE 编辑器人工操作清单
+# 当前 UE 手工操作清单
 
-更新日期：2026-08-06  
-用途：Phase 0 首次验证后的三项收口修正。本文件已覆盖上一轮完整操作。
+更新日期：2026-08-06
 
-## 一、彻底关闭 Hardware Ray Tracing
+适用任务：Phase 1A 玩家、ASC 与 Pawn Avatar 生命周期验证。
 
-当前配置是：
+验证状态：**已完成并全部通过。** 单人 PIE 与两人 Listen Server 均确认 Owner/Avatar 关系正确，未发现本清单所列异常。
 
-```text
-r.RayTracing=True
-r.Lumen.HardwareRayTracing=False
-```
+## 开始前状态
 
-这表示只关闭了 Lumen 使用硬件光追，项目的 Ray Tracing 支持仍然开启。
+- Codex 已完成 `ApecoxEditor Win64 Development` 完整构建和 DLL 链接，结果为 `Succeeded`。
+- 本阶段不需要创建蓝图、输入资产、GameplayEffect、GameplayTag、相机或人物 Mesh。
+- `AApecoxPlayerCharacter` 当前没有相机、输入和可见角色资产，因此进入 PIE 后画面静止或没有人物表现是正常现象，不属于本阶段失败。
+- `Health/MaxHealth` 当前默认是 `0/0`。出生值以后由初始化 GE 或英雄配置负责；不要在编辑器里临时改成 100。
 
-打开 `Edit > Project Settings > Engine - Rendering`。按 UE 5.8 当前界面检查：
+## 一、刷新 Rider
 
-1. 在 `Lumen` 分组中，保持 `Use Hardware Ray Tracing when available` 关闭。
-2. 在 `Direct Lighting` 分组中，保持 `Ray Traced Shadows` 关闭。
-3. 在 `Hardware Ray Tracing` 分组中，关闭当前仍被勾选的 `Support Hardware Ray Tracing`。
-4. 同一分组中的 `Generate Ray Tracing Proxies` 和 `Path Tracing` 本项目也不使用，可以一并关闭。
-5. 在 `Software Ray Tracing` 分组中，保持 `Generate Mesh Distance Fields` 开启；Lumen 软件追踪需要它。
-6. 保持 Lumen、Virtual Shadow Maps、DX12 和 SM6 不变。
-7. 按提示重启编辑器。
+1. 按你当前使用的 Rider 流程刷新 Unreal 项目/C++ 文件。
+2. 确认可以看到：
+   - `Source/Apecox/Public/...`
+   - `Source/Apecox/Private/...`
+3. 不需要重新生成由 Codex 管理的 `.sln`，也不要移动 C++ 文件。
 
-成功后 `Config/DefaultEngine.ini` 应出现 `r.RayTracing=False`，或不再保存开启值。
+## 二、让开发地图使用 Apecox GameMode
 
-## 二、显式启用 Gameplay Abilities
+1. 启动 `D:/UnrealProject/Apecox/Apecox.uproject`。
+2. 打开 `/Game/Blueprints/Maps/L_Apecox_DevGym`。
+3. 在编辑器顶部菜单打开 `Window -> World Settings`。
+4. 在 World Settings 的 Details 搜索：`GameMode Override`。
+5. 把它设置为 C++ 类 `ApecoxGameMode`。
+   - 不需要创建 `BP_ApecoxGameMode`。
+   - 该 C++ GameMode 已把 GameState、PlayerController、PlayerState 和 Default Pawn 指向 Apecox 自有类。
+6. 保存地图。
 
-UE 5.8 的 `GameplayAbilities` 插件默认并不启用。当前 `.uproject` 已移除 `GASToolsets`，但没有正式 GAS 插件条目。
+如果下拉列表看不到 `ApecoxGameMode`：关闭并重新打开编辑器。完整 DLL 已经编译，不要新建同名蓝图或重复 C++ 类。
 
-打开 `Edit > Plugins`：
+## 三、单人 PIE 验证
 
-1. 搜索友好名称 `Gameplay Abilities`。
-2. 启用 Epic 官方插件。
-3. 确认 `GASToolsets` 仍为关闭状态。
-4. 重启编辑器。
-
-成功后 `Apecox.uproject` 应出现：
-
-```json
-{
-  "Name": "GameplayAbilities",
-  "Enabled": true
-}
-```
-
-`Enhanced Input` 是 UE 5.8 默认启用插件，且 Apecox 模块已经依赖 `EnhancedInput`，本轮不必强行在 `.uproject` 中增加重复条目。
-
-## 三、确认 DevGym 路径并清理重定向
-
-路径名称说明：UE 编辑器里的 `Content` 就是代码和配置资源路径中的 `/Game` 虚拟挂载点，并不存在一个需要创建的 `Game` 文件夹。
+1. PIE 玩家数设为 `1`。
+2. 启动 PIE。
+3. 在 PIE 窗口按控制台键，执行：
 
 ```text
-编辑器：Content/Blueprints/Maps/L_Apecox_DevGym
-磁盘：  D:/UnrealProject/Apecox/Content/Blueprints/Maps/L_Apecox_DevGym.umap
-资源：  /Game/Blueprints/Maps/L_Apecox_DevGym
+ShowDebug AbilitySystem
 ```
 
-当前正式地图资源路径已经接受为：
+4. 查看屏幕上的 GAS 调试标题。它应同时包含类似内容：
 
 ```text
-/Game/Blueprints/Maps/L_Apecox_DevGym
+for avatar ApecoxPlayerCharacter_...
+for owner ApecoxPlayerState_...
 ```
 
-这里把 `/Game/Blueprints` 作为 Apecox 项目自有 Gameplay 内容根，不要求其中只能存 Blueprint。地图无需移动。
+这证明：
 
-1. 打开 `Project Settings > Project > Maps & Modes`，确认两个默认地图仍指向 `/Game/Blueprints/Maps/L_Apecox_DevGym`。
-2. 在 Content Browser 设置中启用 `Show Redirectors`。
-3. 查看 `/Game` 根目录的 1.3 KB 同名资产。
-4. 如果它显示为 Redirector，对 `/Game` 根目录执行 `Fix Up Redirectors in Folder`，修复后它应自动消失。
-5. 如果它显示为真正的 Level，先告诉 Codex，不要直接删除。
-6. 对 `/Game/Blueprints` 执行一次 `Fix Up Redirectors in Folder`。
-7. 执行 `Save All`。
+- ASC 的逻辑 Owner 是 `AApecoxPlayerState`。
+- 当前物理 Avatar 是 `AApecoxPlayerCharacter`。
+- Character 的 `PossessedBy` 路径完成了 ActorInfo 初始化。
 
-## 四、最终验证
+5. 在 PIE 运行期间查看 World Outliner：
+   - 应存在 `ApecoxPlayerController_...`。
+   - 应存在 `ApecoxPlayerState_...`。
+   - 应存在 `ApecoxPlayerCharacter_...`。
+6. 选择运行时 `ApecoxPlayerState`，在 Details 中确认有：
+   - `AbilitySystemComponent`，类型为 `ApecoxAbilitySystemComponent`。
+   - `VitalAttributeSet`，类型为 `ApecoxVitalAttributeSet`。
+7. 选择运行时 `ApecoxPlayerCharacter`：
+   - Character 自身不能出现另一个作为默认子对象创建的 ASC。
+   - Capsule、Mesh、CharacterMovement 等 ACharacter 原生组件存在是正常的。
+8. `ShowDebug AbilitySystem` 的 Attribute 页面可以显示 `Health/MaxHealth=0`；这是预期结果。
+9. 打开 Output Log，确认没有：
+   - C++ `ensure` 或崩溃。
+   - `[Apecox] ASC ... has unexpected AvatarActor ...`。
+   - 重复 ASC、无效 OwnerActor 或无效 AvatarActor 相关警告。
+10. 停止 PIE。
 
-1. 关闭并重新打开编辑器。
-2. 项目默认进入 `/Game/Blueprints/Maps/L_Apecox_DevGym`。
-3. 单人 PIE 正常。
-4. `Play As Listen Server`、2 Players 正常。
-5. Output Log 没有插件、地图重定向或 Shader 平台错误。
+## 四、两人 Listen Server 验证
 
-完成后告诉 Codex“修正完成”。Codex 将复核并执行首个 commit 与 push。
+1. Play 设置：
+   - `Number of Players = 2`
+   - `Net Mode = Play As Listen Server`
+2. 建议使用两个独立 PIE 窗口，方便分别打开控制台。
+3. 启动 PIE，等待主机和客户端都进入 `L_Apecox_DevGym`。
+4. 在主机窗口执行：
+
+```text
+ShowDebug AbilitySystem
+```
+
+5. 在客户端窗口执行同一命令。
+6. 两个窗口的 GAS 调试标题都必须满足：
+   - Avatar 名称是各自的 `ApecoxPlayerCharacter_...`。
+   - Owner 名称是对应的 `ApecoxPlayerState_...`。
+   - Owner 与 Avatar 不是同一个 Actor。
+7. 服务器 PIE World Outliner 中应有两组 PlayerState/Character：
+   - 每个 PlayerState 各自拥有一个 ASC。
+   - 每个 Character 都不创建第二个 ASC。
+   - 不同玩家的 Avatar/Owner 不能串到另一位玩家。
+8. 查看 Output Log，确认没有：
+   - `unexpected AvatarActor` ensure。
+   - ActorInfo 无效、重复初始化或组件复制警告。
+   - 客户端断开或加入失败。
+9. 停止 PIE。
+
+## 五、本阶段暂不人工验证的内容
+
+- 当前尚未实现 Death/Respawn，不要求为了测试旧 Avatar 清退而临时创建关卡蓝图或 Cheat 流程。
+- “新 Pawn 先到、旧 Pawn 后清理”的乱序防护已经完成源码审查；在 Phase 1C 有真实 Respawn 后进行运行时验证。
+- 当前没有初始化 GE，因此不验证 Health 数值变化，只验证 AttributeSet 存在和复制声明没有错误。
+- 当前没有 Ability、Cue 或输入缓存，因此“不残留 Ability/Cue/Input”的真实行为在 Phase 1B/1C 闭环后验证。
+
+## 六、通过标准
+
+只有以下全部满足，Phase 1A 的 UE 验证才通过：
+
+- 地图实际使用 `ApecoxGameMode`。
+- 单人 `ShowDebug AbilitySystem` 同时显示正确 PlayerState Owner 和 Character Avatar。
+- 两人 Listen Server 的主机与客户端分别显示自己的正确 Owner/Avatar。
+- ASC 只由 PlayerState 创建，Character 没有第二个 ASC。
+- Output Log 没有 Apecox ActorInfo ensure、复制错误或崩溃。
+- `Health/MaxHealth=0/0` 被视为当前正确结果，没有通过编辑器临时写入出生值。
+
+验证完成后，把单人和多人结果以及任何日志异常告诉 Codex。

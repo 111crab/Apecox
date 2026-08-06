@@ -1,6 +1,6 @@
 # Apecox Unreal Engine Project Context
 
-更新日期：2026-08-05
+更新日期：2026-08-06
 
 ## 项目事实
 
@@ -8,13 +8,13 @@
 - 项目文件：`Apecox.uproject`
 - Unreal Engine：5.8，安装路径 `E:/UE_5.8`
 - 主运行时模块：`Apecox`
-- 当前源码仅包含 UE 自动生成的主模块，没有 Gameplay Framework 或 GAS 业务类。
-- `Apecox.Build.cs` 当前依赖：`Core`、`CoreUObject`、`Engine`、`InputCore`、`EnhancedInput`。
-- Git 已初始化，当前分支为 `main`，远端 `origin` 指向 `https://github.com/111crab/Apecox.git`；尚未形成首个提交。
+- Phase 1A 已建立最小 Gameplay Framework、PlayerState ASC 所有权、Pawn Avatar Init/Uninit 和 `Health/MaxHealth` Vital Attribute；代码审查及完整 `ApecoxEditor` 构建已通过，等待 PIE 验证。
+- `Apecox.Build.cs` 当前依赖：`Core`、`CoreUObject`、`Engine`、`InputCore`、`EnhancedInput`、`GameplayAbilities`、`GameplayTags`、`GameplayTasks`。
+- Git 已初始化，当前分支为 `main`，远端 `origin` 指向 `https://github.com/111crab/Apecox.git`；Phase 0 基线提交 `e115f8f` 已推送。
 - 项目自建 `.uasset/.umap/.ubulk/.uexp` 使用 Git LFS；第三方商业资产默认不提交。
 - 当前默认地图是 `/Game/Blueprints/Maps/L_Apecox_DevGym`；编辑器中的 `Content` 对应资源挂载点 `/Game`。
 - Epic Experimental、EditorOnly 的 `GASToolsets` 已关闭；官方 `GameplayAbilities` 已在 `.uproject` 中显式启用。
-- `Apecox.Build.cs` 尚未加入 GameplayAbilities、GameplayTags、GameplayTasks；这些运行时模块依赖在 Phase 1 开始 GAS 代码时按设计接入。
+- 玩家 ASC 由 `AApecoxPlayerState` 持有并使用 Mixed 复制，`AApecoxPlayerCharacter` 作为当前 Avatar；PlayerState 网络更新频率为 100 Hz。
 
 ## 本机参考来源
 
