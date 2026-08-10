@@ -6,6 +6,7 @@
 #include "Character/ApecoxPlayerCharacter.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "GameplayTags/ApecoxGameplayTags.h"
 
 UApecoxGameplayAbility::UApecoxGameplayAbility()
 {
@@ -16,6 +17,10 @@ UApecoxGameplayAbility::UApecoxGameplayAbility()
 
 	ActivationPolicy = EApecoxAbilityActivationPolicy::OnInputTriggered;
 	ActivationGroup = EApecoxAbilityActivationGroup::Independent;
+
+	// State.Death 加入原生 ActivationBlockedTags 统一阻止死亡期间的普通 GA 激活。
+	// 死亡期间输入由 GA 内部自行处理（取消其他 GA、清空输入），无需在 ASC 输入循环中逐个判断 Dying/Dead。
+	ActivationBlockedTags.AddTag(ApecoxGameplayTags::State_Death);
 }
 
 // --- 项目强类型 Getter：空指针安全 ---

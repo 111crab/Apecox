@@ -27,3 +27,5 @@ Thumbs.db
 # Third-party commercial assets must stay outside the public repository.
 # New external content should be isolated here when its package paths allow it.
 /Content/ThirdParty/
+/Content/__ExternalActors__/ThirdParty/
+/Content/__ExternalObjects__/ThirdParty/

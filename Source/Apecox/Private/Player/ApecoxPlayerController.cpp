@@ -3,6 +3,12 @@
 #include "Player/ApecoxPlayerController.h"
 #include "Player/ApecoxPlayerState.h"
 #include "AbilitySystem/ApecoxAbilitySystemComponent.h"
+#include "Camera/ApecoxPlayerCameraManager.h"
+
+AApecoxPlayerController::AApecoxPlayerController()
+{
+	PlayerCameraManagerClass = AApecoxPlayerCameraManager::StaticClass();
+}
 
 void AApecoxPlayerController::PostProcessInput(const float DeltaTime, const bool bGamePaused)
 {

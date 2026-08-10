@@ -64,3 +64,21 @@
 - 输入链采用 IA -> InputConfig -> InputTag -> AbilitySpec；ASC 在 PlayerController `PostProcessInput` 阶段统一处理 Pressed/Held/Released。
 - 首批 Native Tag 仅为 `InputTag.Ability.Tactical` 与 `State.Input.AbilityBlocked`；Tactical 绑定键盘 Q。
 - Pawn AbilitySet 由 Character 保存授予 Handles 并随 Avatar 生命周期撤销；装备和英雄玩家级授予以后由各自所有者管理。
+
+## 2026-08-10 - Phase 1C 死亡与重生职责分层
+
+- `Health/MaxHealth` 继续由 PlayerState 上的 `UApecoxVitalAttributeSet` 持有；AttributeSet 只检测变化并广播 OutOfHealth，不控制 Pawn。
+- 新建 Pawn 生命周期组件 `UApecoxHealthComponent : UActorComponent`，负责绑定 ASC、复制严格死亡状态和向 GAS 暴露死亡 Tag；组件不重复存储生命值。
+- 死亡状态采用 `NotDead -> DeathStarted -> DeathFinished`；`State.Death.Dying` 表示死亡流程执行中，`State.Death.Dead` 表示旧 Pawn 可以完成销毁，两者互斥。
+- `UApecoxDeathAbility` 由 `GameplayEvent.Death` 触发，负责取消普通 Ability、清空输入、进入 Blocking 组，并为未来死亡蒙太奇保留异步结束出口。
+- `AApecoxPlayerCharacter` 只处理当前身体的移动、碰撞、解绑与销毁；`AApecoxGameMode` 只在服务器延时 3 秒后重生。
+- PlayerState、ASC 和 VitalAttributeSet 跨死亡保留；Pawn AbilitySet 随 Pawn 撤销和重新授予；复活恢复满生命。
+- Phase 1C 使用直接修改 Health 的 Debug GE 验证生命周期，不把它当正式伤害架构，也不提前加入 Shield、Damage Meta Attribute 或伤害类型。
+
+## 2026-08-10 - Phase 1C 双视角与镜头收口
+
+- 一个 Character、Capsule 与 CMC 继续作为移动和网络预测的唯一事实；第一/第三人称只拆分表现。
+- 项目自有 `AApecoxPlayerCameraManager` 使用 UE 5.8 官方 `ViewPitchMin=-70 / ViewPitchMax=80` 基线，并随 PlayerController 跨 Pawn 重生保留。
+- Motion Blur 常驻关闭，避免第一人称近景移动产生不必要的拖影干扰。
+- Pitch 钳制已验证生效，但完整 Manny 空手第一人称仍存在轻微胸腔透视和跑动观感问题。该问题归入表现质量，不继续用更窄 Pitch 或缩放参数硬压。
+- 用户批准结束 Phase 1C；空手第一人称专用 Arms/动画暂不阻塞，随第一把步枪的 FP/TP 表现架构统一处理。

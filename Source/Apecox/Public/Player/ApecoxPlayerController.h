@@ -21,6 +21,9 @@ class APECOX_API AApecoxPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+public:
+	AApecoxPlayerController();
+
 protected:
 	virtual void PostProcessInput(const float DeltaTime, const bool bGamePaused) override;
 };

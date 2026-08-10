@@ -14,11 +14,28 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+struct FGameplayEffectModCallbackData;
+
+/**
+ * FApecoxAttributeEvent
+ * - 原生多播委托，用于广播属性变化和 OutOfHealth
+ * - 携带 EffectInstigator/Causer、GE Spec、Magnitude 和新旧值，
+ *   接收方（HealthComponent）无需再反向查询最后一次 GE
+ */
+DECLARE_MULTICAST_DELEGATE_SixParams(FApecoxAttributeEvent,
+	AActor* /*EffectInstigator*/,
+	AActor* /*EffectCauser*/,
+	const FGameplayEffectSpec* /*EffectSpec*/,
+	float /*EffectMagnitude*/,
+	float /*OldValue*/,
+	float /*NewValue*/
+);
+
 /**
  * UApecoxVitalAttributeSet
  * - 只建立 Health 与 MaxHealth 的基础复制、访问器和数值钳制
- * - 本批不触发死亡、不广播 GameplayEvent、不生成 Cue
- * - 出生数值由后续初始化 GE 或英雄配置负责，不在此硬编码
+ * - 广播 OnOutOfHealth（首次跨入 Health <= 0），但不销毁 Pawn、不请求重生
+ * - 出生数值由初始化 GE 或英雄配置负责，不在此硬编码
  */
 UCLASS()
 class APECOX_API UApecoxVitalAttributeSet : public UAttributeSet
@@ -51,7 +68,22 @@ public:
 	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+
+	// --- GE 前后值链路 ---
+	/** 在 GE Modifier 执行前保存 Health/MaxHealth 旧值；
+	 *  不在 PreAttributeChange 中保存，避免 PostGameplayEffectExecute 内
+	 *  SetHealth() 二次经过 PreAttributeChange 覆盖已存旧值 */
+	virtual bool PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	// --- 属性变化委托（由 HealthComponent 绑定，不保存第二份数值） ---
+	// GE 执行后广播；参数覆盖 Instigator、Causer、Spec、Magnitude、旧值、新值
+	mutable FApecoxAttributeEvent OnHealthChanged;
+	mutable FApecoxAttributeEvent OnMaxHealthChanged;
+
+	// 仅在首次跨入 Health <= 0 时广播一次；Health 恢复后（PostAttributeChange）
+	// 重置 bOutOfHealth，允许下一次死亡再次广播
+	mutable FApecoxAttributeEvent OnOutOfHealth;
 
 private:
 	/**
@@ -59,4 +91,12 @@ private:
 	 * 保证基础值和最终值遵守同一不变量：MaxHealth >= 0，0 <= Health <= MaxHealth。
 	 */
 	void ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const;
+
+	// 防止同一段持续低血量反复广播 OutOfHealth；
+	// 仅在首次从正数跨入 <=0 时广播，Health 回到正数后重置
+	bool bOutOfHealth = false;
+
+	// 在 GE 执行前暂存旧值，用于 PostGameplayEffectExecute 中的变化广播
+	float HealthBeforeAttributeChange = 0.0f;
+	float MaxHealthBeforeAttributeChange = 0.0f;
 };
