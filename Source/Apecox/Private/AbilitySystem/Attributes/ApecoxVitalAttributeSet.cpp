@@ -4,6 +4,29 @@
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
 #include "AbilitySystemComponent.h"
+#include "Player/ApecoxPlayerState.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
+
+namespace
+{
+	AApecoxPlayerState* ResolveApecoxPlayerState(AActor* Actor)
+	{
+		if (AApecoxPlayerState* PlayerState = Cast<AApecoxPlayerState>(Actor))
+		{
+			return PlayerState;
+		}
+		if (const APawn* Pawn = Cast<APawn>(Actor))
+		{
+			return Pawn->GetPlayerState<AApecoxPlayerState>();
+		}
+		if (const AController* Controller = Cast<AController>(Actor))
+		{
+			return Controller->GetPlayerState<AApecoxPlayerState>();
+		}
+		return nullptr;
+	}
+}
 
 void UApecoxVitalAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -13,6 +36,9 @@ void UApecoxVitalAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	// REPNOTIFY_Always：即使值未变化也触发 OnRep，保证新连接客户端收到正确初始值
 	DOREPLIFETIME_CONDITION_NOTIFY(UApecoxVitalAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UApecoxVitalAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UApecoxVitalAttributeSet, Shield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UApecoxVitalAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UApecoxVitalAttributeSet, ShieldEvolutionPoints, COND_None, REPNOTIFY_Always);
 }
 
 void UApecoxVitalAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -39,6 +65,30 @@ void UApecoxVitalAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& Old
 	OnMaxHealthChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
 }
 
+void UApecoxVitalAttributeSet::OnRep_Shield(const FGameplayAttributeData& OldShield)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UApecoxVitalAttributeSet, Shield, OldShield);
+	const float OldValue = OldShield.GetCurrentValue();
+	const float NewValue = Shield.GetCurrentValue();
+	OnShieldChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+}
+
+void UApecoxVitalAttributeSet::OnRep_MaxShield(const FGameplayAttributeData& OldMaxShield)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UApecoxVitalAttributeSet, MaxShield, OldMaxShield);
+	const float OldValue = OldMaxShield.GetCurrentValue();
+	const float NewValue = MaxShield.GetCurrentValue();
+	OnMaxShieldChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+}
+
+void UApecoxVitalAttributeSet::OnRep_ShieldEvolutionPoints(const FGameplayAttributeData& OldPoints)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UApecoxVitalAttributeSet, ShieldEvolutionPoints, OldPoints);
+	const float OldValue = OldPoints.GetCurrentValue();
+	const float NewValue = ShieldEvolutionPoints.GetCurrentValue();
+	OnShieldEvolutionPointsChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+}
+
 // --- 统一钳制：基础值和最终值共享同一不变量 ---
 
 void UApecoxVitalAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
@@ -52,6 +102,18 @@ void UApecoxVitalAttributeSet::ClampAttribute(const FGameplayAttribute& Attribut
 	{
 		// Health 受当前 MaxHealth 上限约束，不低于 0
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+	}
+	else if (Attribute == GetMaxShieldAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
+	}
+	else if (Attribute == GetShieldAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxShield());
+	}
+	else if (Attribute == GetShieldEvolutionPointsAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
 	}
 }
 
@@ -90,6 +152,17 @@ void UApecoxVitalAttributeSet::PostAttributeChange(const FGameplayAttribute& Att
 			}
 		}
 	}
+	else if (Attribute == GetMaxShieldAttribute())
+	{
+		const float CurrentShield = GetShield();
+		if (CurrentShield > NewValue)
+		{
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			{
+				ASC->SetNumericAttributeBase(GetShieldAttribute(), NewValue);
+			}
+		}
+	}
 
 	// Health 恢复到正数后重置 bOutOfHealth，允许下一次死亡再次广播
 	// 此路径在 PostGameplayEffectExecute 的委托广播后方被调用，
@@ -114,6 +187,9 @@ bool UApecoxVitalAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallba
 	// 会再次经过 PreAttributeChange，覆盖已保存的旧值。
 	HealthBeforeAttributeChange = GetHealth();
 	MaxHealthBeforeAttributeChange = GetMaxHealth();
+	ShieldBeforeAttributeChange = GetShield();
+	MaxShieldBeforeAttributeChange = GetMaxShield();
+	ShieldEvolutionPointsBeforeAttributeChange = GetShieldEvolutionPoints();
 
 	return true;
 }
@@ -124,7 +200,20 @@ void UApecoxVitalAttributeSet::PostGameplayEffectExecute(const FGameplayEffectMo
 
 	// 1. 针对当前被修改属性完成必要钳制。
 	//    MaxHealth 已在 PreAttributeChange 中通过 ClampAttribute 完成钳制。
-	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	float AppliedDamage = 0.0f;
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute() && Data.EvaluatedData.Magnitude < 0.0f)
+	{
+		// 正式伤害 GE 仍修改 Health；在唯一权威结算点把负变化重新分配为护盾优先。
+		// 使用 Modifier 原始幅度，而不是已经被 0 下限截断的 Health 差，才能正确处理护盾和溢出伤害。
+		const float RequestedDamage = -Data.EvaluatedData.Magnitude;
+		const float ShieldDamage = FMath::Min(ShieldBeforeAttributeChange, RequestedDamage);
+		const float HealthDamage = FMath::Min(
+			HealthBeforeAttributeChange, FMath::Max(RequestedDamage - ShieldDamage, 0.0f));
+		SetShield(ShieldBeforeAttributeChange - ShieldDamage);
+		SetHealth(HealthBeforeAttributeChange - HealthDamage);
+		AppliedDamage = ShieldDamage + HealthDamage;
+	}
+	else if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		const float ClampedHealth = FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth());
 		if (GetHealth() != ClampedHealth)
@@ -141,6 +230,30 @@ void UApecoxVitalAttributeSet::PostGameplayEffectExecute(const FGameplayEffectMo
 	AActor* Instigator = Data.EffectSpec.GetEffectContext().GetInstigator();
 	AActor* Causer = Data.EffectSpec.GetEffectContext().GetEffectCauser();
 
+	const float OldPoints = ShieldEvolutionPointsBeforeAttributeChange;
+	const float NewPoints = GetShieldEvolutionPoints();
+	if (NewPoints != OldPoints)
+	{
+		OnShieldEvolutionPointsChanged.Broadcast(
+			Instigator, Causer, &Data.EffectSpec, NewPoints - OldPoints, OldPoints, NewPoints);
+	}
+
+	const float OldMaxShield = MaxShieldBeforeAttributeChange;
+	const float NewMaxShield = GetMaxShield();
+	if (NewMaxShield != OldMaxShield)
+	{
+		OnMaxShieldChanged.Broadcast(
+			Instigator, Causer, &Data.EffectSpec, NewMaxShield - OldMaxShield, OldMaxShield, NewMaxShield);
+	}
+
+	const float OldShield = ShieldBeforeAttributeChange;
+	const float NewShield = GetShield();
+	if (NewShield != OldShield)
+	{
+		OnShieldChanged.Broadcast(
+			Instigator, Causer, &Data.EffectSpec, NewShield - OldShield, OldShield, NewShield);
+	}
+
 	const float OldMax = MaxHealthBeforeAttributeChange;
 	const float NewMax = GetMaxHealth();
 	if (NewMax != OldMax)
@@ -155,6 +268,24 @@ void UApecoxVitalAttributeSet::PostGameplayEffectExecute(const FGameplayEffectMo
 	{
 		OnHealthChanged.Broadcast(
 			Instigator, Causer, &Data.EffectSpec, NewHealth - OldHealth, OldHealth, NewHealth);
+	}
+
+	// 只有玩家伤害敌对目标时获得进化点。AI 仍有 PlayerState/ASC 以复用伤亡链路，
+	// 但 CombatTeam=AI 会在这里明确排除其成长。
+	if (AppliedDamage > 0.0f)
+	{
+		AApecoxPlayerState* SourcePlayerState = ResolveApecoxPlayerState(Instigator);
+		AApecoxPlayerState* TargetPlayerState = nullptr;
+		if (const UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			TargetPlayerState = Cast<AApecoxPlayerState>(ASC->GetOwnerActor());
+		}
+		if (SourcePlayerState && TargetPlayerState && SourcePlayerState != TargetPlayerState
+			&& SourcePlayerState->GetCombatTeam() == EApecoxCombatTeam::Players
+			&& SourcePlayerState->GetCombatTeam() != TargetPlayerState->GetCombatTeam())
+		{
+			SourcePlayerState->AddShieldEvolutionPoints(AppliedDamage);
+		}
 	}
 
 	// 3. OutOfHealth 判断在 OnHealthChanged 回调后重新读取实时 Health，

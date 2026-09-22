@@ -23,4 +23,16 @@ class APECOX_API AApecoxPlayerCameraManager : public APlayerCameraManager
 
 public:
 	AApecoxPlayerCameraManager();
+
+protected:
+	/**
+	 * 覆写相机视图更新：在父类完成 CameraComponent / CalcCamera 计算后，
+	 * 应用项目级第一人称近裁剪距离。
+	 */
+	virtual void UpdateViewTargetInternal(FTViewTarget& OutVT, float DeltaTime) override;
+
+private:
+	/** 本地第一人称视图使用的透视近裁剪距离，单位为厘米。不要降低为 RAR 原工程的 0.0001。 */
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|First Person", meta = (ClampMin = "1.0", UIMin = "1.0", Units = "cm"))
+	float FirstPersonNearClipPlane = 1.0f;
 };

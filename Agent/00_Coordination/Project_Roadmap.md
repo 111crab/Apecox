@@ -1,124 +1,100 @@
-# Apecox 顶层实施路线图
+# Apecox 项目路线图
 
-更新日期：2026-08-06
-维护规则：这里只记录顶层实施阶段与阶段验收，不记录每日任务；当前局部工作只看 `Current_Phase.md`。
+更新日期：2026-09-21
 
-## 实施原则
+## 产品方向
 
-- 每个阶段形成可以运行和验证的纵向闭环，不以“创建了许多基础类”作为完成。
-- 当前只做战斗原型，不实现胜利条件、完整比赛模式、大逃杀、AI 或商业内容量。
-- 普通路径优先可复用，特殊武器、蒙太奇和技能必须有受控扩展出口，但不提前设计万能系统。
-- 涉及玩法真相的阶段必须验证单人、Listen Server + Client；关键网络阶段再加入 Dedicated Server 与网络模拟。
-- 具体类名、函数、字段、GameplayTag 和资产字段在每个局部阶段开始前单独审阅。
+Apecox 是面向 UE 游戏客户端岗位展示的第一人称射击垂直切片。玩家固定使用第一人称操控，同时为其他观察者同步第三人称角色与单步枪行为。项目优先证明 Gameplay Framework、GAS、服务器权威武器事务、双视角表现分层、数据驱动配置和自动化验证能力；内容数量不是目标。
 
-## Phase 0 - 工程与协作基线
+## 已交付里程碑
 
-目标：把空项目变成稳定、可版本控制、可进行多人开发的工程基线。
+### M0 工程与运行时基础
 
-包含：
+状态：完成。
 
-- 完成渲染、插件、项目自有内容目录和开发地图设置。
-- 显式启用 GAS 运行时依赖，移除当前无需求的实验性工具依赖。
-- 初始化 Git、忽略规则与 Git LFS；第三方资产不进入公开仓库。
-- 确认空项目编译、PIE、Listen Server 和 Dedicated Server 启动基线。
+- UE 5.8、DX12/SM6、Enhanced Input、Gameplay Ability System、开发地图和 Public/Private 模块结构。
+- GameMode、GameState、PlayerController、PlayerState、Character、ASC、AttributeSet 与 HealthComponent 职责分层。
+- PlayerState 持有 ASC，Pawn 作为 Avatar；死亡 Ability 与延迟重生闭环。
+- OwnerOnly Inventory、主/副槽结构、Character Equipment、Definition/Instance/Presentation 分层。
 
-状态：已完成。提交 `e115f8f chore: establish Apecox project baseline` 已推送到 `origin/main`。
+### M1 第一把步枪可玩闭环
 
-## Phase 1 - 玩家生命周期与 GAS 基线
+状态：2026-09-18 正式收口。
 
-目标：建立视角和武器无关的最小玩家战斗运行时。
+- 出生即通过权威库存事务装备步枪、保留权威拾取能力、第一人称装备与静止可重生人机。
+- 持枪移动、冲刺、跳跃、蹲伏、趴下、探头、ADS、检视和左手 IK。
+- Projectile 自动射击、弹匣/备用弹药、普通/空仓换弹、确定性连发散布和分层后坐。
+- 镜头压枪保留、近墙遮挡、固定一倍镜、镭射与动态准星。
+- 枪口火光/烟雾、Impact 粒子、命中声、弹孔、脚步、落地、姿态、装备和机械换弹声音。
+- 自动化、全蓝图编译、资产引用扫描和完整 Editor 构建均已通过。
 
-包含：
+### M2 第三人称单步枪行为同步
 
-- 最小 GameMode/GameState 只负责出生、死亡、复活等生命周期，不实现胜利规则。
-- PlayerController、PlayerState、Character/Pawn 的网络职责。
-- PlayerState 持有 ASC、Pawn 作为 Avatar，以及对称 Init/Uninit。
-- Mixed Replication Mode、基础 Attribute、AbilitySet 与键盘/鼠标输入路由。
-- 一个无美术依赖的最小 Ability 激活/取消/结束闭环。
+状态：2026-09-19 完成并收口。
 
-验收：单人、Listen Server + Client、Dedicated Server + Client 下所有权一致；死亡换 Pawn 后无残留输入、Ability 或 Cue。
+- 已完成并人工验收远端出生持枪、Idle、四向移动、冲刺、跳跃/落地、蹲伏和上下 Aim Offset。
+- 已完成左手 IK、人物/枪械开火以及普通/空仓/移动换弹同步；第一人称表现未发生回归。
+- 第三人称使用 Lyra Manny 与 Rifle 配套资产，复用 Apecox 现有 CMC、GAS、Equipment、弹药和换弹事务，不迁移 Lyra 玩法框架。
+- 同一镭射可见状态已经同步成远端挂件、光束和落点；完整构建、73/73 自动化、双端生命周期和第一人称 ADS 动态重合均已通过。
+- 权威实体 Projectile 与多人本地曳光已经分层；单人及 Listen Server 双向人工认证通过，当前自动化基线为 76/76。
 
-当前状态：进行中。Phase 1A 已形成提交 `86ed380`；Phase 1B 的 AbilitySet、项目 GA 基类、Native GameplayTag 和 Ability 输入闭环已通过完整构建、单人及两人 Listen Server 验证。下一局部阶段候选为 Phase 1C：死亡、复活、换 Pawn 与 Dedicated Server 生命周期收口。
+### M3 PvE Score Attack
 
-## Phase 2 - 第一把步枪腰射纵向切片
+状态：2026-09-22 已形成稳定原型；最新 AI 积极度、护盾门槛和按命中揭示血条等待最终人工观感验收。
 
-目标：从出生为空手到拾枪、装备、腰射、命中反馈形成第一条完整战斗链路。
+- 最小服务器战斗 AI：寻找最近存活玩家、NavMesh 追击、视线与射程判断、GAS 开火、现有换弹、死亡和重生。
+- 权威击杀归因、个人 K/D、玩家队/AI 队比分、默认 15 分目标和 PostMatch 胜方。
+- 腰射中心点与服务器确认命中后在腰射/ADS 共用的红色 X 命中标记。
+- 当前 Canvas HUD 常驻显示玩家队/AI 队比分，达到目标分后显示 `VICTORY / DEFEAT`，避免 PostMatch 停火和 AI 停止被误判为运行故障。
+- Lua 已取消；比赛界面后续使用 UMG。
+- 玩家初始 `100` 生命与白色 `25` 护盾；对敌实际伤害累积护盾进化点，白到蓝需 `500`，蓝到紫再需 `1000`。红色血包与蓝色护盾电池已接入权威拾取事务，玩家成长跨 Pawn 重生保留，AI 不使用护盾。
+- AI 已从全图直追改为“争夺点移动/环视 -> 局部发现 -> 反应延迟 -> 短连发/换弹 -> 丢失目标后返回争夺点”的轻量状态逻辑。
+- HUD 已显示玩家生命、护盾品质与下一等级点数、武器弹药、比分和胜负；敌人血条只在本地玩家实际造成伤害后短暂揭示。
+- 当前使用用户自制地图与 `L_Apecox_DevGym` 验证玩法，不迁移 Lyra 完整地图或 AI 框架。
+- `ApecoxEditor Win64 Development` 完整构建和全量 `Apecox.*` 自动化 `83/83` 已通过；最新人工项见 `Current_UE_Manual_Steps.md`。
 
-包含：
+## 已完成版本边界
 
-- 世界拾取物、私有库存、双武器槽结构中的一个已占用槽、当前装备和武器运行时实例。
-- FP 人物/武器与 TP 人物/武器的双表示入口。
-- 腰射输入、射击节奏、TargetData、服务器验证、伤害和基础命中表现。
-- 首版准星、弹匣显示和必要调试信息。
+- 玩家固定使用第一人称操控；空手第一人称手臂隐藏。
+- 第三人称 Character、武器和动作负责向其他玩家表达同一玩法行为；不提供第三人称操控，也不要求逐帧复刻第一人称。
+- M2 收口时的人机静止靶标边界已经由 M3 重新开启；当前人机会自主追击、射击、换弹、死亡和重生。
+- 运行时只保留 Projectile 射击模型；Hitscan 试验分支已删除。
+- 比赛权威规则已经存在；胜负 UMG 和演示 Arena 属于 M3 后续交付。
 
-阶段前必须确认：Hitscan/Projectile；双视角具体资产形式；相机目标与枪口轨迹口径。
+## 已暂缓能力包
 
-验收：拥有者即时看到正确开火，服务器只结算一次，远端看到正确持枪与开火表现。
+这些内容不是正式收口版本的未修缺陷。以后恢复开发时，每次只重新启用一个能力包并建立新的设计、测试和人工验收范围。
 
-## Phase 3 - 双武器槽、弹药、换弹与死亡掉落
+| 能力包 | 暂缓内容 |
+| --- | --- |
+| AI 扩展 | Behavior Tree/EQS、AI Perception、掩体、侧移和完整难度系统 |
+| 比赛 UI | UMG 玩家生命、武器信息、比分、目标分和胜负面板 |
+| 网络加固 | 新一轮多人回归、Dedicated Server、延迟/丢包、带宽与预测纠正专题 |
+| 武器生态 | 切枪、通用配件、第二把武器、共享弹药类型 |
+| 英雄战斗扩展 | 小技能、大招、被动与临时特殊武器；基础护盾、进化点和补给拾取已进入 M3 |
+| 扩展移动 | 第一/第三人称滑铲、低墙翻越；自由贴墙攀爬暂不进入面试版 |
+| 工具链 | 通用技能编辑器、SkillGraph 或完整数据解释器 |
 
-目标：形成可持续战斗资源循环，而不是只能无限开火的演示。
+第三人称趴姿已登记并搁置。出生/重生瞬时闪手、水平独立瞄准和 Turn-in-place 已完成；用户已经取消第三人称检视同步，拾取/装备动作仍不是当前完成条件。
 
-包含：
+## 重新开启项目时的顺序
 
-- 两个普通武器槽、切枪和动作取消。
-- 弹匣、备用弹药、换弹与至少两种独立 Ammo Definition。
-- 主动丢弃和死亡后的武器、配件、弹药、电池世界掉落事务。
-- EvolutionProgress 在死亡/复活后的保留策略。
+1. 在 `Current_Phase.md` 中写明唯一的新交付目标和明确排除项。
+2. 先重新审计当前资产与 C++ 接口，再更新 `Current_Code_Design.md`；不要直接复用历史 Prompt 中的旧字段。
+3. 功能实现后依次完成 Editor 构建、定向自动化、全量 `Apecox.*` 自动化和精简 PIE 清单。
+4. 只有功能边界再次稳定时才做下一轮全项目清理。
 
-验收：高延迟和重复输入下不重复扣弹、装弹、授予装备或生成掉落。
+## 当前证据入口
 
-## Phase 4 - 武器家族、ADS、瞄具与配件
-
-目标：证明步枪、霰弹枪、狙击枪能够复用公共流程，同时保留装填、射击和表现差异。
-
-包含：
-
-- 霰弹枪与狙击枪的分阶段接入。
-- ADS、1x/2-4x/6-8x 瞄具和倍率状态。
-- 类型化配件兼容与 Modifier 聚合，不修改静态 Definition。
-- 武器家族动画层、专属 Montage/武器动画和第三人称可见外观。
-
-验收：WeaponType 与 AmmoType 解耦；不同武器切换、换弹和配件变更没有状态串扰。
-
-## Phase 5 - 护盾、伤害、恢复与进化
-
-目标：完成 Health/Shield/Evolution 的多人战斗与恢复闭环。
-
-包含：
-
-- 先护盾后生命的服务器伤害结算和结构化结果。
-- 破盾反馈、护盾电池和技能恢复入口。
-- 对敌人造成有效伤害转化为 EvolutionProgress。
-- 复活后进化进度保留，当前护盾资源按后续规则恢复。
-
-验收：不同网络角色看到一致的生命、护盾、破盾和进化结果；同一次伤害不会重复累计进化。
-
-## Phase 6 - 英雄技能与特殊战斗载体
-
-目标：用少量代表技能验证技能、武器、装备和 CombatEntity 的扩展能力。
-
-包含：
-
-- 一个会临时装备特殊武器的技能。
-- 一个在 GA 结束后继续存在的 CombatEntity 技能。
-- 小技能、大招、被动与公共武器 Ability 的授予和动作关系。
-
-验收：特殊技能不复制整套武器逻辑，也不向公共配置增加只服务单个技能的临时开关。
-
-## Phase 7 - 移动、网络加固与作品化
-
-目标：完成滑铲/滑铲跳、网络压力测试和求职展示材料。
-
-包含：
-
-- CharacterMovement 预测滑铲与滑铲跳，GAS 负责门控和动作关系。
-- Dedicated Server、延迟/丢包/重复请求测试和流量分析。
-- HUD、调试可视化、Functional Test、演示地图、架构图和作品视频。
-- 根据实测决定是否进入 Server-Side Rewind 专题。
-
-## Phase 8 - 技能编辑器预研
-
-目标：只在运行时模型稳定后评估 Montage 式技能编辑器、预览世界、时间轴和配置资产工作流。
-
-它是长期加分项，不是战斗原型的前置条件。
+- 当前状态：`Current_Phase.md`
+- 当前结构：`Current_Code_Design.md`
+- 最终人工检查：`Current_UE_Manual_Steps.md`
+- 正式收口报告：`../Reports/2026-09-18_Project_Closure_Cleanup_Report.md`
+- 正式收口自动化报告：`Saved/Diagnostics/ProjectClosure/Tests/index.json`
+- 第三人称镭射构建与自动化报告：`Saved/Diagnostics/2026-09-19_ThirdPersonLaser`
+- 第三人称镭射运行时修复报告：`Saved/Diagnostics/2026-09-19_ThirdPersonLaserRuntimeFix`
+- 第三人称镭射最终生命周期修复报告：`Saved/Diagnostics/2026-09-19_ThirdPersonLaserLifecycleFix/Tests`
+- 第一人称 ADS 镭射动态重合报告：`Saved/Diagnostics/2026-09-19_ADSLaserLock`
+- 多人子弹曳光报告：`Saved/Diagnostics/2026-09-21_ProjectileTracer`
+- PostMatch 比分与胜负提示报告：`Saved/Diagnostics/2026-09-21_PostMatchHUD`
+- 客户端本地占有后 FP 表现重建报告：`Saved/Diagnostics/2026-09-22_ClientFirstPersonRestart`

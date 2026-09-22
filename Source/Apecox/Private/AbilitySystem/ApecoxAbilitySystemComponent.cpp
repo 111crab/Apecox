@@ -186,6 +186,21 @@ void UApecoxAbilitySystemComponent::AbilitySpecInputReleased(FGameplayAbilitySpe
 }
 
 // ====================================================================
+//  Ability 生命周期
+// ====================================================================
+
+void UApecoxAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySpec)
+{
+	// 在 Super 调用前移除输入缓存——Spec 删除前清理其句柄，
+	// 防止 Held 中永久残留无效句柄导致 ProcessAbilityInput 访问已销毁 Spec
+	InputPressedSpecHandles.Remove(AbilitySpec.Handle);
+	InputHeldSpecHandles.Remove(AbilitySpec.Handle);
+	InputReleasedSpecHandles.Remove(AbilitySpec.Handle);
+
+	Super::OnRemoveAbility(AbilitySpec);
+}
+
+// ====================================================================
 //  ActorInfo / Avatar
 // ====================================================================
 
@@ -206,13 +221,6 @@ void UApecoxAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, A
 		{
 			if (!Spec.Ability || !Spec.Ability->IsA<UApecoxGameplayAbility>())
 			{
-				continue;
-			}
-
-			UGameplayAbility* AbilityCDO = Spec.Ability.Get();
-			if (AbilityCDO && AbilityCDO->GetInstancingPolicy() == EGameplayAbilityInstancingPolicy::NonInstanced)
-			{
-				ensureMsgf(false, TEXT("[Apecox] Non-Instanced Ability '%s' found."), *GetNameSafe(Spec.Ability));
 				continue;
 			}
 

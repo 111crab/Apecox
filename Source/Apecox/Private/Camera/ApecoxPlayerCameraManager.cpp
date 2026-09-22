@@ -10,3 +10,14 @@ AApecoxPlayerCameraManager::AApecoxPlayerCameraManager()
 	ViewPitchMin = -70.0f;
 	ViewPitchMax = 80.0f;
 }
+
+void AApecoxPlayerCameraManager::UpdateViewTargetInternal(FTViewTarget& OutVT, float DeltaTime)
+{
+	// 先保留引擎正常的 CameraComponent / CalcCamera 计算，
+	// 再覆盖每视图的透视近裁剪距离。
+	Super::UpdateViewTargetInternal(OutVT, DeltaTime);
+
+	// UE 5.8 提供每视图近裁剪面（PerspectiveNearClipPlane）。
+	// 这里只调整本地第一人称视图，避免修改全局 NearClipPlane 影响其他视图的深度精度。
+	OutVT.POV.PerspectiveNearClipPlane = FirstPersonNearClipPlane;
+}

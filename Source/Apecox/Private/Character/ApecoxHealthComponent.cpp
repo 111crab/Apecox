@@ -6,6 +6,8 @@
 #include "GameplayTags/ApecoxGameplayTags.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
+#include "Game/ApecoxGameMode.h"
+#include "Engine/World.h"
 
 UApecoxHealthComponent::UApecoxHealthComponent()
 {
@@ -203,6 +205,15 @@ void UApecoxHealthComponent::HandleOutOfHealth(AActor* EffectInstigator, AActor*
 	if (!AbilitySystemComponent)
 	{
 		return;
+	}
+
+	if (!bDeathReportedToGameMode)
+	{
+		bDeathReportedToGameMode = true;
+		if (AApecoxGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AApecoxGameMode>() : nullptr)
+		{
+			GameMode->HandleCombatantKilled(GetOwner(), EffectInstigator);
+		}
 	}
 
 	// 发送 GameplayEvent.Death 触发 DeathAbility

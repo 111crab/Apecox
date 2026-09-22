@@ -7,6 +7,7 @@
 #include "ApecoxGameMode.generated.h"
 
 class APlayerController;
+class APawn;
 
 /**
  * AApecoxGameMode
@@ -22,6 +23,10 @@ class APECOX_API AApecoxGameMode : public AGameModeBase
 
 public:
 	AApecoxGameMode();
+	virtual void BeginPlay() override;
+
+	/** HealthComponent 在服务器确认一次致死伤害后提交，GameMode 是唯一计分裁判。 */
+	void HandleCombatantKilled(AActor* Victim, AActor* Killer);
 
 	/**
 	 * 请求在 RespawnDelaySeconds 后为该 Controller 重生 Pawn
@@ -31,13 +36,26 @@ public:
 	 */
 	void RequestPlayerRespawn(APlayerController* Controller);
 
+	/** 销毁已死亡机器人的旧 AI Controller，并在出生点生成同类新 Pawn。 */
+	void RequestBotRespawn(AController* Controller, TSubclassOf<APawn> BotPawnClass,
+		const FTransform& SpawnTransform);
+
 protected:
 	/** 单个 Controller 的独立延迟重生回调 */
 	void RestartPlayerAfterDelay(TWeakObjectPtr<AController> Controller);
 
+	/** 机器人不复用 Controller；新 Pawn 通过 AutoPossessAI 建立全新 AI 生命周期。 */
+	void RespawnBotAfterDelay(TSubclassOf<APawn> BotPawnClass, FTransform SpawnTransform);
+
 	/** 死亡后到重生之间的延迟（秒），可在 GameMode Blueprint Defaults 中修改 */
 	UPROPERTY(EditDefaultsOnly, Category = "Apecox|Respawn")
 	float RespawnDelaySeconds = 3.0f;
+
+	/** PvE Score Attack 的胜利分数。 */
+	UPROPERTY(EditDefaultsOnly, Category = "Apecox|Match", meta = (ClampMin = "1"))
+	int32 TargetScore = 15;
+
+	bool IsScoreAttackInProgress() const;
 
 private:
 	/** 等待重生的 Controller 集合，仅负责同一 Controller 防重入；

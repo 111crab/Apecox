@@ -45,6 +45,18 @@ public:
 	virtual void AbilitySpecInputReleased(FGameplayAbilitySpec& Spec) override;
 
 	// ====================================================================
+	//  Ability 生命周期
+	// ====================================================================
+
+	/**
+	 * 任意 Spec 被服务器移除或复制移除时，精确从三组输入缓存删除该 SpecHandle。
+	 * 不发送伪造 InputReleased——Spec 删除本身会结束/移除 Ability。
+	 * 覆盖服务器 ClearAbility 和拥有客户端收到 Spec 删除复制的两条路径，
+	 * 防止 Held 中永久残留无效句柄。
+	 */
+	virtual void OnRemoveAbility(FGameplayAbilitySpec& AbilitySpec) override;
+
+	// ====================================================================
 	//  ActorInfo / Avatar
 	// ====================================================================
 

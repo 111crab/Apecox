@@ -516,11 +516,12 @@ Cue 不负责权威命中、伤害、治疗、目标选择或 Buff 规则。Exec
 - 第一人称和第三人称可以使用不同动画精度；关键语义必须一致。
 - 第三人称按 Rifle/Pistol/Heavy 动作族复用，利用 Socket、Left Hand IK、Aim Offset 和小量覆写适配武器。
 
-### Apecox 待定
+### Apecox 已确认的表示边界
 
-- 本地第一人称 Mesh 和世界第三人称 Mesh 是否双表示。
-- 动画实例、Montage 同步和远端可见性策略。
-- 武器 Mesh、枪口和手部 IK 的所有权。
+- 玩家固定使用第一人称操控，不提供运行时第三人称视角切换。
+- Owning Player 使用 FP Arms/Weapon；其他客户端使用 TP Manny/Weapon 世界表示。
+- 两套表现共享装备、射击、弹药、伤害和技能状态，不要求共享 AnimBP、Montage 或最终姿势。
+- Weapon Mesh、枪口锚点和手部 IK 的具体资产契约在第一把步枪表现收口中逐项确认，不改变上述视角边界。
 
 ## 15. 技能编辑器边界
 

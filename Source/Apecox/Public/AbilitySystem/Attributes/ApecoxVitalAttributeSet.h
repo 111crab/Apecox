@@ -33,7 +33,7 @@ DECLARE_MULTICAST_DELEGATE_SixParams(FApecoxAttributeEvent,
 
 /**
  * UApecoxVitalAttributeSet
- * - 只建立 Health 与 MaxHealth 的基础复制、访问器和数值钳制
+ * - 建立生命、玩家护盾与护盾进化点的基础复制、访问器和数值钳制
  * - 广播 OnOutOfHealth（首次跨入 Health <= 0），但不销毁 Pawn、不请求重生
  * - 出生数值由初始化 GE 或英雄配置负责，不在此硬编码
  */
@@ -55,6 +55,21 @@ public:
 	FGameplayAttributeData MaxHealth;
 	APECOX_ATTRIBUTE_ACCESSORS(UApecoxVitalAttributeSet, MaxHealth)
 
+	/** 当前护盾。AI 保持为 0；玩家伤害先结算护盾，再结算 Health。 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Shield, Category = "Apecox|Shield")
+	FGameplayAttributeData Shield;
+	APECOX_ATTRIBUTE_ACCESSORS(UApecoxVitalAttributeSet, Shield)
+
+	/** 白/蓝/紫护盾上限分别为 25/50/75。 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxShield, Category = "Apecox|Shield")
+	FGameplayAttributeData MaxShield;
+	APECOX_ATTRIBUTE_ACCESSORS(UApecoxVitalAttributeSet, MaxShield)
+
+	/** 本局跨 Pawn 生命周期保留的累计进化点；500/1500 分别升级蓝/紫。 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_ShieldEvolutionPoints, Category = "Apecox|Shield")
+	FGameplayAttributeData ShieldEvolutionPoints;
+	APECOX_ATTRIBUTE_ACCESSORS(UApecoxVitalAttributeSet, ShieldEvolutionPoints)
+
 	// --- 复制 ---
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -63,6 +78,15 @@ public:
 
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+
+	UFUNCTION()
+	virtual void OnRep_Shield(const FGameplayAttributeData& OldShield);
+
+	UFUNCTION()
+	virtual void OnRep_MaxShield(const FGameplayAttributeData& OldMaxShield);
+
+	UFUNCTION()
+	virtual void OnRep_ShieldEvolutionPoints(const FGameplayAttributeData& OldPoints);
 
 	// --- 数值约束（基础值与最终值使用同一钳制规则） ---
 	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
@@ -80,6 +104,9 @@ public:
 	// GE 执行后广播；参数覆盖 Instigator、Causer、Spec、Magnitude、旧值、新值
 	mutable FApecoxAttributeEvent OnHealthChanged;
 	mutable FApecoxAttributeEvent OnMaxHealthChanged;
+	mutable FApecoxAttributeEvent OnShieldChanged;
+	mutable FApecoxAttributeEvent OnMaxShieldChanged;
+	mutable FApecoxAttributeEvent OnShieldEvolutionPointsChanged;
 
 	// 仅在首次跨入 Health <= 0 时广播一次；Health 恢复后（PostAttributeChange）
 	// 重置 bOutOfHealth，允许下一次死亡再次广播
@@ -99,4 +126,7 @@ private:
 	// 在 GE 执行前暂存旧值，用于 PostGameplayEffectExecute 中的变化广播
 	float HealthBeforeAttributeChange = 0.0f;
 	float MaxHealthBeforeAttributeChange = 0.0f;
+	float ShieldBeforeAttributeChange = 0.0f;
+	float MaxShieldBeforeAttributeChange = 0.0f;
+	float ShieldEvolutionPointsBeforeAttributeChange = 0.0f;
 };

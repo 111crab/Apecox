@@ -150,4 +150,7 @@ private:
 	// 追踪已绑定的 ASC，用于 InitializeWithAbilitySystem 判断是否已完整初始化
 	UPROPERTY()
 	TObjectPtr<UApecoxAbilitySystemComponent> BoundASC;
+
+	/** One Pawn lifetime may report at most one authoritative death to GameMode. */
+	bool bDeathReportedToGameMode = false;
 };

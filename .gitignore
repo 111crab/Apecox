@@ -27,5 +27,21 @@ Thumbs.db
 # Third-party commercial assets must stay outside the public repository.
 # New external content should be isolated here when its package paths allow it.
 /Content/ThirdParty/
+/Content/InfimaGames/
 /Content/__ExternalActors__/ThirdParty/
 /Content/__ExternalObjects__/ThirdParty/
+
+# Migrated Epic/Fab/Marketplace source assets used only by the local demo.
+# Keep project-authored Blueprints/DataAssets under Content/Blueprints versioned,
+# and restore these dependency roots from the licensed source projects locally.
+/Content/Characters/
+/Content/Effects/
+/Content/PhysicsMaterials/
+/Content/SciFi_Props/
+/Content/Weapons/
+
+# Deprecated RAR unarmed animation copies; the shipped prototype starts armed.
+/Content/Blueprints/Characters/Animations/FirstPerson/Unarmed/
+
+# Local inspection/render scratch output.
+/tmp/

@@ -21,6 +21,12 @@
 
 `External/External_Reference_Index.md` 记录本机 MHTML 原文、摘要和迁移状态。大体积网页归档没有复制进 Apecox，以避免 Git 体积和版权问题。
 
+本机美术资产盘点：
+
+- `External/2026-08-06_Fab_FP_TP_Character_Weapon_Asset_Research.md`：Fab 第一/第三人称角色、武器和动画候选。
+- `External/2026-08-10_Rifle_Pro_MoCap_Asset_Inventory.md`：Rifle Pro 第三人称步枪动作覆盖、缺口和 UE 5.8 接入建议。
+- `External/2026-09-22_Public_Repository_Asset_Dependencies.md`：公开仓库排除的 RAR、Lyra、Fab 等第三方资产根目录及本地恢复方式。
+
 ## 全量历史
 
 找不到结论来源时，再查 `../99_Legacy_Context/Legacy_Markdown_Manifest.csv`。不要把全量历史作为每次任务的默认上下文。
